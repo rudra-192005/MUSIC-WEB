@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SONIX — Queue</title>
+  <link rel="stylesheet" href="styles/global.css"/>
+  <link rel="stylesheet" href="styles/pages.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="logo">SONIX</div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-item" data-page="player"><span class="nav-icon">▶</span><span>Player</span></a></li>
+      <li><a href="queue.html" class="nav-item active" data-page="queue"><span class="nav-icon">≡</span><span>Queue</span></a></li>
+      <li><a href="playlist.html" class="nav-item" data-page="playlist"><span class="nav-icon">◈</span><span>Playlists</span></a></li>
+      <li><a href="userdata.html" class="nav-item" data-page="userdata"><span class="nav-icon">◉</span><span>Profile</span></a></li>
+      <li><a href="recommendations.html" class="nav-item" data-page="recommendations"><span class="nav-icon">◎</span><span>Discover</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="now-playing-mini">
+        <div class="mini-cover" id="sidebarCover"></div>
+        <div class="mini-info">
+          <span class="mini-title" id="sidebarTitle">—</span>
+          <span class="mini-artist" id="sidebarArtist">—</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="queue-page">
+      <div class="queue-hero">
+        <div class="page-title">Queue</div>
+        <div class="page-subtitle">Your upcoming tracks</div>
+        <div class="queue-stats">
+          <div class="queue-stat">
+            <div class="queue-stat-value" id="queueCount">12</div>
+            <div class="queue-stat-label">Tracks</div>
+          </div>
+          <div class="queue-stat">
+            <div class="queue-stat-value" id="queueDuration">52:15</div>
+            <div class="queue-stat-label">Total Time</div>
+          </div>
+          <div class="queue-stat">
+            <div class="queue-stat-value" id="queueGenres">5</div>
+            <div class="queue-stat-label">Genres</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Queue Header Row -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding: 20px 48px 8px; border-bottom: 1px solid var(--border);">
+        <span style="font-size:11px; font-family:var(--font-mono); color:var(--text3); letter-spacing:0.15em;">TRACK</span>
+        <div style="display:flex; gap:32px;">
+          <span style="font-size:11px; font-family:var(--font-mono); color:var(--text3); letter-spacing:0.15em;">GENRE</span>
+          <span style="font-size:11px; font-family:var(--font-mono); color:var(--text3); letter-spacing:0.15em; width:40px; text-align:right;">TIME</span>
+          <span style="width:28px;"></span>
+        </div>
+      </div>
+
+      <div class="queue-list" id="queueList"></div>
+    </div>
+  </main>
+</div>
+
+<script src="scripts/data.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const track = appState.queue[appState.currentTrackIndex];
+  if (track) {
+    document.getElementById('sidebarTitle').textContent = track.title;
+    document.getElementById('sidebarArtist').textContent = track.artist;
+    const cover = document.getElementById('sidebarCover');
+    cover.style.background = `linear-gradient(135deg, ${track.color}, ${track.color}66)`;
+  }
+
+  renderQueue();
+
+  // Stats
+  const totalSec = appState.queue.reduce((a, t) => a + t.durationSec, 0);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  document.getElementById('queueCount').textContent = appState.queue.length;
+  document.getElementById('queueDuration').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+  const genres = new Set(appState.queue.map(t => t.genre));
+  document.getElementById('queueGenres').textContent = genres.size;
+});
+
+function renderQueue() {
+  const list = document.getElementById('queueList');
+  list.innerHTML = appState.queue.map((track, idx) => {
+    const isActive = idx === appState.currentTrackIndex;
+    return `
+      <div class="queue-item ${isActive ? 'active-track' : ''}" onclick="playFromQueue(${idx})">
+        <div class="queue-num">
+          ${isActive ? `
+            <div class="playing-bars">
+              <span></span><span></span><span></span>
+            </div>
+          ` : (idx + 1)}
+        </div>
+        <div class="queue-cover" style="background: linear-gradient(135deg, ${track.color}22, ${track.color}11);">
+          ${track.emoji}
+        </div>
+        <div class="queue-info">
+          <div class="queue-title">${track.title}</div>
+          <div class="queue-artist">${track.artist}</div>
+        </div>
+        <div class="queue-genre-tag">${track.genre}</div>
+        <div class="queue-duration">${track.duration}</div>
+        <button class="queue-remove" onclick="removeFromQueue(event, ${idx})" title="Remove">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function playFromQueue(index) {
+  appState.currentTrackIndex = index;
+  appState.isPlaying = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+
+function removeFromQueue(event, index) {
+  event.stopPropagation();
+  if (appState.queue.length <= 1) return;
+  appState.queue.splice(index, 1);
+  if (appState.currentTrackIndex >= appState.queue.length) {
+    appState.currentTrackIndex = 0;
+  }
+  saveState();
+  renderQueue();
+  document.getElementById('queueCount').textContent = appState.queue.length;
+}
+</script>
+</body>
+</html>
