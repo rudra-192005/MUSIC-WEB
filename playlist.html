@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SONIX — Playlists</title>
+  <link rel="stylesheet" href="styles/global.css"/>
+  <link rel="stylesheet" href="styles/pages.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="logo">SONIX</div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-item"><span class="nav-icon">▶</span><span>Player</span></a></li>
+      <li><a href="queue.html" class="nav-item"><span class="nav-icon">≡</span><span>Queue</span></a></li>
+      <li><a href="playlist.html" class="nav-item active"><span class="nav-icon">◈</span><span>Playlists</span></a></li>
+      <li><a href="userdata.html" class="nav-item"><span class="nav-icon">◉</span><span>Profile</span></a></li>
+      <li><a href="recommendations.html" class="nav-item"><span class="nav-icon">◎</span><span>Discover</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="now-playing-mini">
+        <div class="mini-cover" id="sidebarCover"></div>
+        <div class="mini-info">
+          <span class="mini-title" id="sidebarTitle">—</span>
+          <span class="mini-artist" id="sidebarArtist">—</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="playlist-page">
+      <div class="playlist-hero">
+        <div>
+          <div class="page-title">Playlists</div>
+          <div class="page-subtitle" id="playlistSubtitle">6 playlists · 28 tracks</div>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ New Playlist</button>
+      </div>
+
+      <!-- Playlist Detail View (hidden by default) -->
+      <div id="playlistDetail" style="display:none; padding: 32px 48px;">
+        <button onclick="closeDetail()" style="background:none; border:none; color:var(--text3); cursor:pointer; font-family:var(--font-display); font-size:13px; margin-bottom:24px;">← Back to Playlists</button>
+        <div id="detailContent"></div>
+      </div>
+
+      <div class="playlist-grid" id="playlistGrid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Create Playlist Modal -->
+<div class="modal-overlay" id="createModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">New Playlist</div>
+    <input type="text" class="modal-input" id="playlistNameInput" placeholder="Playlist name..." maxlength="40"/>
+    <input type="text" class="modal-input" id="playlistDescInput" placeholder="Description (optional)..."/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createPlaylist()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script src="scripts/data.js"></script>
+<script>
+let localPlaylists = [...PLAYLISTS];
+
+const COLORS = ["#e8ff47","#47c8ff","#ff4e6a","#c8a0ff","#ff9947","#47ffb8"];
+const TAGS = ["Synthwave","Electronic","Ambient","Dream Pop","Mixed","Fresh"];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const track = appState.queue[appState.currentTrackIndex];
+  if (track) {
+    document.getElementById('sidebarTitle').textContent = track.title;
+    document.getElementById('sidebarArtist').textContent = track.artist;
+    document.getElementById('sidebarCover').style.background = `linear-gradient(135deg, ${track.color}, ${track.color}66)`;
+  }
+  renderPlaylists();
+});
+
+function renderPlaylists() {
+  const grid = document.getElementById('playlistGrid');
+  const totalTracks = localPlaylists.reduce((a, p) => a + p.trackIds.length, 0);
+  document.getElementById('playlistSubtitle').textContent = `${localPlaylists.length} playlists · ${totalTracks} tracks`;
+
+  grid.innerHTML = localPlaylists.map((playlist, i) => {
+    const tracks = playlist.trackIds.map(id => getTrack(id)).filter(Boolean);
+    const emojis = tracks.slice(0, 4).map(t => t.emoji);
+    while (emojis.length < 4) emojis.push('🎵');
+
+    return `
+      <div class="playlist-card fade-up" style="animation-delay: ${i * 0.05}s" onclick="openDetail(${playlist.id})">
+        <div class="playlist-cover">
+          ${emojis.map(e => `<div class="playlist-cover-cell">${e}</div>`).join('')}
+          <div class="playlist-play-overlay">
+            <button class="playlist-play-btn" onclick="playPlaylist(event, ${playlist.id})">▶</button>
+          </div>
+        </div>
+        <div class="playlist-info">
+          <div class="playlist-name">${playlist.name}</div>
+          <div class="playlist-meta">${playlist.trackIds.length} tracks · ${calcDuration(playlist.trackIds)}</div>
+          <div class="playlist-tag" style="background:${playlist.tagColor}; color:${playlist.tagTextColor};">${playlist.tag}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function calcDuration(trackIds) {
+  const total = trackIds.reduce((a, id) => {
+    const t = getTrack(id);
+    return a + (t ? t.durationSec : 0);
+  }, 0);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function openDetail(playlistId) {
+  const playlist = localPlaylists.find(p => p.id === playlistId);
+  if (!playlist) return;
+  document.getElementById('playlistGrid').style.display = 'none';
+  const detail = document.getElementById('playlistDetail');
+  detail.style.display = 'block';
+
+  const tracks = playlist.trackIds.map(id => getTrack(id)).filter(Boolean);
+  document.getElementById('detailContent').innerHTML = `
+    <div style="display:flex; align-items:center; gap:24px; margin-bottom:32px;">
+      <div style="width:100px; height:100px; border-radius:12px; background:linear-gradient(135deg, ${playlist.color}33, ${playlist.color}11); display:flex; align-items:center; justify-content:center; font-size:40px; border:1px solid ${playlist.color}33;">
+        ${tracks[0]?.emoji || '🎵'}
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:800;">${playlist.name}</div>
+        <div style="font-size:13px; color:var(--text3); margin-top:4px;">${playlist.description}</div>
+        <div style="font-size:12px; font-family:var(--font-mono); color:var(--text3); margin-top:8px;">${tracks.length} tracks · ${calcDuration(playlist.trackIds)}</div>
+        <div style="margin-top:16px; display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="playPlaylistDirect(${playlist.id})">▶ Play All</button>
+          <button class="btn btn-ghost" onclick="shufflePlaylist(${playlist.id})">⇄ Shuffle</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      ${tracks.map((track, i) => `
+        <div style="display:flex; align-items:center; gap:16px; padding:12px 16px; border-radius:8px; cursor:pointer; transition:background 0.2s;" 
+             onmouseover="this.style.background='var(--card)'" 
+             onmouseout="this.style.background='transparent'"
+             onclick="playTrackFromPlaylist(${track.id}, ${playlist.id})">
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--text3); width:20px;">${i+1}</span>
+          <div style="width:40px; height:40px; border-radius:6px; background:linear-gradient(135deg, ${track.color}22, ${track.color}11); display:flex; align-items:center; justify-content:center; font-size:18px;">${track.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:var(--text);">${track.title}</div>
+            <div style="font-size:11px; font-family:var(--font-mono); color:var(--text3);">${track.artist}</div>
+          </div>
+          <div style="font-size:10px; font-family:var(--font-mono); letter-spacing:0.1em; padding:3px 10px; border-radius:20px; background:var(--card2); color:var(--text3);">${track.genre}</div>
+          <div style="font-family:var(--font-mono); font-size:12px; color:var(--text3);">${track.duration}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function closeDetail() {
+  document.getElementById('playlistGrid').style.display = 'grid';
+  document.getElementById('playlistDetail').style.display = 'none';
+}
+
+function playPlaylist(event, id) {
+  event.stopPropagation();
+  playPlaylistDirect(id);
+}
+
+function playPlaylistDirect(id) {
+  const playlist = localPlaylists.find(p => p.id === id);
+  if (!playlist) return;
+  const tracks = playlist.trackIds.map(i => getTrack(i)).filter(Boolean);
+  appState.queue = tracks;
+  appState.currentTrackIndex = 0;
+  appState.isPlaying = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+
+function shufflePlaylist(id) {
+  const playlist = localPlaylists.find(p => p.id === id);
+  if (!playlist) return;
+  const tracks = playlist.trackIds.map(i => getTrack(i)).filter(Boolean);
+  const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+  appState.queue = shuffled;
+  appState.currentTrackIndex = 0;
+  appState.isPlaying = true;
+  appState.isShuffle = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+
+function playTrackFromPlaylist(trackId, playlistId) {
+  const playlist = localPlaylists.find(p => p.id === playlistId);
+  if (!playlist) return;
+  const tracks = playlist.trackIds.map(i => getTrack(i)).filter(Boolean);
+  appState.queue = tracks;
+  appState.currentTrackIndex = tracks.findIndex(t => t.id === trackId);
+  appState.isPlaying = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+
+function openCreateModal() {
+  document.getElementById('createModal').classList.add('open');
+  setTimeout(() => document.getElementById('playlistNameInput').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('createModal').classList.remove('open');
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('createModal')) closeModal();
+}
+
+function createPlaylist() {
+  const name = document.getElementById('playlistNameInput').value.trim();
+  if (!name) return;
+  const desc = document.getElementById('playlistDescInput').value.trim() || 'My new playlist';
+  const colorIdx = localPlaylists.length % COLORS.length;
+  const newPl = {
+    id: Date.now(),
+    name,
+    description: desc,
+    trackIds: [],
+    color: COLORS[colorIdx],
+    tag: TAGS[colorIdx],
+    tagColor: COLORS[colorIdx] + '22',
+    tagTextColor: COLORS[colorIdx],
+  };
+  localPlaylists.push(newPl);
+  closeModal();
+  document.getElementById('playlistNameInput').value = '';
+  document.getElementById('playlistDescInput').value = '';
+  renderPlaylists();
+}
+</script>
+</body>
+</html>
