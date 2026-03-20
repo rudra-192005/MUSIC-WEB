@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SONIX — Profile</title>
+  <link rel="stylesheet" href="styles/global.css"/>
+  <link rel="stylesheet" href="styles/pages.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="logo">SONIX</div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-item"><span class="nav-icon">▶</span><span>Player</span></a></li>
+      <li><a href="queue.html" class="nav-item"><span class="nav-icon">≡</span><span>Queue</span></a></li>
+      <li><a href="playlist.html" class="nav-item"><span class="nav-icon">◈</span><span>Playlists</span></a></li>
+      <li><a href="userdata.html" class="nav-item active"><span class="nav-icon">◉</span><span>Profile</span></a></li>
+      <li><a href="recommendations.html" class="nav-item"><span class="nav-icon">◎</span><span>Discover</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="now-playing-mini">
+        <div class="mini-cover" id="sidebarCover"></div>
+        <div class="mini-info">
+          <span class="mini-title" id="sidebarTitle">—</span>
+          <span class="mini-artist" id="sidebarArtist">—</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="userdata-page">
+
+      <!-- Profile Hero -->
+      <div class="profile-hero">
+        <div class="profile-avatar" title="Change avatar">
+          <span id="avatarEmoji">🎧</span>
+          <div class="profile-avatar-edit">✏️</div>
+        </div>
+        <div>
+          <div class="profile-name" id="profileName">Alex Rivera</div>
+          <div class="profile-handle" id="profileHandle">@alexbeats</div>
+          <div class="profile-joined" id="profileJoined">Joined March 2022</div>
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <div class="profile-stat-num" id="statPlays">8,472</div>
+              <div class="profile-stat-label">Total Plays</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-num" id="statHours">412h</div>
+              <div class="profile-stat-label">Listened</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-num" id="statLiked">89</div>
+              <div class="profile-stat-label">Liked Songs</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-num" id="statPlaylists">6</div>
+              <div class="profile-stat-label">Playlists</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Grid -->
+      <div class="userdata-grid">
+
+        <!-- Top Artists -->
+        <div class="data-card">
+          <div class="data-card-title">Top Artists</div>
+          <div id="topArtistsList"></div>
+        </div>
+
+        <!-- Genre Breakdown -->
+        <div class="data-card">
+          <div class="data-card-title">Genre Breakdown</div>
+          <div class="genre-chart" id="genreChart"></div>
+        </div>
+
+        <!-- Listening Activity -->
+        <div class="data-card">
+          <div class="data-card-title">Listening Activity</div>
+          <div class="heatmap" id="heatmap"></div>
+          <div class="heatmap-labels">
+            <span class="heatmap-label">MON</span>
+            <span class="heatmap-label">TUE</span>
+            <span class="heatmap-label">WED</span>
+            <span class="heatmap-label">THU</span>
+            <span class="heatmap-label">FRI</span>
+            <span class="heatmap-label">SAT</span>
+            <span class="heatmap-label">SUN</span>
+          </div>
+          <div style="margin-top:16px; display:flex; align-items:center; gap:8px; justify-content:flex-end;">
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text3);">Less</span>
+            <div style="width:10px; height:10px; border-radius:2px; background:var(--card2);"></div>
+            <div style="width:10px; height:10px; border-radius:2px; background:#e8ff4744;"></div>
+            <div style="width:10px; height:10px; border-radius:2px; background:#e8ff4788;"></div>
+            <div style="width:10px; height:10px; border-radius:2px; background:var(--accent);"></div>
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text3);">More</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="data-card">
+          <div class="data-card-title">Recent Activity</div>
+          <div class="activity-list" id="activityList"></div>
+        </div>
+
+      </div>
+
+      <!-- Liked Songs Section -->
+      <div style="padding: 0 48px 48px;">
+        <div class="data-card">
+          <div class="data-card-title">Liked Songs</div>
+          <div id="likedSongsList" style="display:flex; flex-direction:column; gap:2px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="scripts/data.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Sidebar
+  const track = appState.queue[appState.currentTrackIndex];
+  if (track) {
+    document.getElementById('sidebarTitle').textContent = track.title;
+    document.getElementById('sidebarArtist').textContent = track.artist;
+    document.getElementById('sidebarCover').style.background = `linear-gradient(135deg, ${track.color}, ${track.color}66)`;
+  }
+
+  // Profile
+  document.getElementById('avatarEmoji').textContent = USER.avatar;
+  document.getElementById('profileName').textContent = USER.name;
+  document.getElementById('profileHandle').textContent = USER.handle;
+  document.getElementById('profileJoined').textContent = `Joined ${USER.joined}`;
+  document.getElementById('statPlays').textContent = USER.totalPlays.toLocaleString();
+  document.getElementById('statHours').textContent = USER.hoursListened + 'h';
+  const likedCount = TRACKS.filter(t => t.liked).length;
+  document.getElementById('statLiked').textContent = likedCount || USER.likedSongs;
+  document.getElementById('statPlaylists').textContent = USER.playlists;
+
+  // Top Artists
+  const artistList = document.getElementById('topArtistsList');
+  const maxPlays = USER.topArtists[0].plays;
+  artistList.innerHTML = USER.topArtists.map((artist, i) => `
+    <div class="top-artist-item">
+      <div class="artist-rank">${i + 1}</div>
+      <div class="artist-avatar" style="background: linear-gradient(135deg, ${artist.color}33, ${artist.color}11);">
+        ${artist.emoji}
+      </div>
+      <div class="artist-info">
+        <div class="artist-name">${artist.name}</div>
+        <div class="artist-plays">${artist.plays} plays</div>
+        <div class="artist-bar" style="width: ${(artist.plays / maxPlays * 100)}%; background: ${artist.color};"></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Genre Chart
+  const genreChart = document.getElementById('genreChart');
+  genreChart.innerHTML = USER.genreBreakdown.map(g => `
+    <div class="genre-row">
+      <div class="genre-name">${g.genre}</div>
+      <div class="genre-bar-wrap">
+        <div class="genre-bar-fill" style="width: 0%; background: ${g.color};" data-target="${g.pct}"></div>
+      </div>
+      <div class="genre-pct">${g.pct}%</div>
+    </div>
+  `).join('');
+
+  // Animate genre bars
+  setTimeout(() => {
+    document.querySelectorAll('.genre-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  }, 100);
+
+  // Heatmap
+  const heatmap = document.getElementById('heatmap');
+  const intensityColors = ['var(--card2)', '#e8ff4733', '#e8ff4766', '#e8ff47bb', 'var(--accent)'];
+  heatmap.innerHTML = Array.from({ length: 7 * 8 }).map(() => {
+    const level = Math.floor(Math.random() * 5);
+    const title = `${Math.floor(Math.random() * 8)} tracks played`;
+    return `<div class="heatmap-cell" style="background: ${intensityColors[level]};" title="${title}"></div>`;
+  }).join('');
+
+  // Recent Activity
+  const activityList = document.getElementById('activityList');
+  activityList.innerHTML = USER.recentActivity.map(item => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background: ${item.color};"></div>
+      <div class="activity-text">${item.text}</div>
+      <div class="activity-time">${item.time}</div>
+    </div>
+  `).join('');
+
+  // Liked Songs
+  const liked = TRACKS.filter(t => t.liked);
+  const likedList = document.getElementById('likedSongsList');
+  if (liked.length === 0) {
+    likedList.innerHTML = '<div style="color:var(--text3); font-size:13px; padding:16px 0;">No liked songs yet. Heart a track in the player!</div>';
+  } else {
+    likedList.innerHTML = liked.map((track, i) => `
+      <div style="display:flex; align-items:center; gap:16px; padding:12px 16px; border-radius:8px; cursor:pointer; transition:background 0.2s;"
+           onmouseover="this.style.background='var(--card2)'" 
+           onmouseout="this.style.background='transparent'"
+           onclick="playLikedTrack(${track.id})">
+        <span style="font-family:var(--font-mono); font-size:12px; color:var(--text3); width:20px;">${i+1}</span>
+        <div style="width:40px; height:40px; border-radius:6px; background:linear-gradient(135deg, ${track.color}22, ${track.color}11); display:flex; align-items:center; justify-content:center; font-size:18px;">${track.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px; font-weight:600; color:var(--text);">${track.title}</div>
+          <div style="font-size:11px; font-family:var(--font-mono); color:var(--text3);">${track.artist}</div>
+        </div>
+        <div style="font-size:10px; font-family:var(--font-mono); letter-spacing:0.1em; padding:3px 10px; border-radius:20px; background:rgba(255,78,106,0.1); color:#ff4e6a;">♥</div>
+        <div style="font-family:var(--font-mono); font-size:12px; color:var(--text3);">${track.duration}</div>
+      </div>
+    `).join('');
+  }
+});
+
+function playLikedTrack(trackId) {
+  const liked = TRACKS.filter(t => t.liked);
+  appState.queue = liked;
+  appState.currentTrackIndex = liked.findIndex(t => t.id === trackId);
+  appState.isPlaying = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>
