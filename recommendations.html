@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SONIX — Discover</title>
+  <link rel="stylesheet" href="styles/global.css"/>
+  <link rel="stylesheet" href="styles/pages.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="logo">SONIX</div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-item"><span class="nav-icon">▶</span><span>Player</span></a></li>
+      <li><a href="queue.html" class="nav-item"><span class="nav-icon">≡</span><span>Queue</span></a></li>
+      <li><a href="playlist.html" class="nav-item"><span class="nav-icon">◈</span><span>Playlists</span></a></li>
+      <li><a href="userdata.html" class="nav-item"><span class="nav-icon">◉</span><span>Profile</span></a></li>
+      <li><a href="recommendations.html" class="nav-item active"><span class="nav-icon">◎</span><span>Discover</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="now-playing-mini">
+        <div class="mini-cover" id="sidebarCover"></div>
+        <div class="mini-info">
+          <span class="mini-title" id="sidebarTitle">—</span>
+          <span class="mini-artist" id="sidebarArtist">—</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="rec-page">
+      <div class="rec-hero">
+        <div class="page-title">Discover</div>
+        <div class="page-subtitle">Based on your listening · Updated daily</div>
+
+        <!-- Genre Filter -->
+        <div class="genre-filter-row" id="genreFilters"></div>
+      </div>
+
+      <div class="rec-content">
+        <!-- Because You Listen To Section -->
+        <div id="becauseYouSection">
+          <div class="rec-section-title" id="becauseYouLabel">BECAUSE YOU LISTEN TO NEON PULSE</div>
+          <div class="rec-grid" id="becauseYouGrid"></div>
+        </div>
+
+        <!-- Trending in Genre -->
+        <div>
+          <div class="rec-section-title" id="trendingLabel">TRENDING IN SYNTHWAVE</div>
+          <div class="rec-grid" id="trendingGrid"></div>
+        </div>
+
+        <!-- Hidden Gems -->
+        <div>
+          <div class="rec-section-title">HIDDEN GEMS</div>
+          <div class="rec-grid" id="gemsGrid"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="scripts/data.js"></script>
+<script>
+// Recommendation data (simulating different tracks beyond the main library)
+const REC_TRACKS = [
+  {
+    id: 101, title: "Neon Highway", artist: "VOLTAGE RUSH", genre: "Synthwave",
+    emoji: "🛣️", color: "#e8ff47", matchPct: 97, tags: ["Synthwave","Dark","Fast"],
+    similarTo: "NEON PULSE"
+  },
+  {
+    id: 102, title: "After Hours Protocol", artist: "GHOST NET", genre: "Synthwave",
+    emoji: "🌃", color: "#a0a8ff", matchPct: 94, tags: ["Synthwave","Atmospheric"],
+    similarTo: "NEON PULSE"
+  },
+  {
+    id: 103, title: "Cascade Loop", artist: "SIGNAL LOSS", genre: "Electronic",
+    emoji: "🔄", color: "#47c8ff", matchPct: 91, tags: ["Electronic","Glitch"],
+    similarTo: "CHROME WAVE"
+  },
+  {
+    id: 104, title: "Void Garden", artist: "TERRA NULL", genre: "Ambient",
+    emoji: "🌿", color: "#47ffb8", matchPct: 88, tags: ["Ambient","Organic"],
+    similarTo: "ORBIT SOUND"
+  },
+  {
+    id: 105, title: "Static Dream", artist: "MEMBRANE", genre: "Dream Pop",
+    emoji: "☁️", color: "#c8a0ff", matchPct: 85, tags: ["Dream Pop","Soft"],
+    similarTo: "DREAMSCAPE"
+  },
+  {
+    id: 106, title: "Datamosh", artist: "BIT DECAY", genre: "Electronic",
+    emoji: "📡", color: "#ff9947", matchPct: 82, tags: ["Electronic","Experimental"],
+    similarTo: "SYNTAX ERR"
+  },
+  {
+    id: 107, title: "Phase Shift", artist: "QUANTUM BASS", genre: "Techno",
+    emoji: "🎛️", color: "#ff4e6a", matchPct: 79, tags: ["Techno","Hard"],
+    similarTo: "BASSLINE"
+  },
+  {
+    id: 108, title: "Carbon Echo", artist: "THERMAL DRIFT", genre: "Ambient",
+    emoji: "💨", color: "#a0e8ff", matchPct: 76, tags: ["Ambient","Drone"],
+    similarTo: "VAPOR ECHO"
+  },
+  {
+    id: 109, title: "Retrowave City", artist: "OUTRUN X", genre: "Synthwave",
+    emoji: "🏙️", color: "#ff47c8", matchPct: 95, tags: ["Synthwave","Retro","Fast"],
+    similarTo: "NEON PULSE"
+  },
+  {
+    id: 110, title: "Frequency Bath", artist: "WAVE POOL", genre: "Ambient",
+    emoji: "🌊", color: "#47c8e8", matchPct: 87, tags: ["Ambient","Meditative"],
+    similarTo: "ORBIT SOUND"
+  },
+  {
+    id: 111, title: "Neon Dusk", artist: "PRISM CUT", genre: "Synthwave",
+    emoji: "🌆", color: "#ffcc47", matchPct: 92, tags: ["Synthwave","Melodic"],
+    similarTo: "NEON PULSE"
+  },
+  {
+    id: 112, title: "Electric Bloom", artist: "CURRENT WAVE", genre: "Electronic",
+    emoji: "🌺", color: "#47ffa0", matchPct: 83, tags: ["Electronic","Uplifting"],
+    similarTo: "CHROME WAVE"
+  },
+];
+
+const ALL_GENRES = ['All', 'Synthwave', 'Electronic', 'Ambient', 'Dream Pop', 'Techno'];
+let activeGenre = 'All';
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Sidebar
+  const track = appState.queue[appState.currentTrackIndex];
+  if (track) {
+    document.getElementById('sidebarTitle').textContent = track.title;
+    document.getElementById('sidebarArtist').textContent = track.artist;
+    document.getElementById('sidebarCover').style.background = `linear-gradient(135deg, ${track.color}, ${track.color}66)`;
+  }
+
+  // Genre filters
+  renderFilters();
+  renderRecs();
+});
+
+function renderFilters() {
+  document.getElementById('genreFilters').innerHTML = ALL_GENRES.map(g => `
+    <button class="genre-filter-btn ${g === activeGenre ? 'active' : ''}" onclick="filterGenre('${g}')">${g}</button>
+  `).join('');
+}
+
+function filterGenre(genre) {
+  activeGenre = genre;
+  renderFilters();
+  renderRecs();
+}
+
+function getFiltered() {
+  if (activeGenre === 'All') return REC_TRACKS;
+  return REC_TRACKS.filter(t => t.genre === activeGenre);
+}
+
+function renderRecs() {
+  const filtered = getFiltered();
+  const topArtist = USER.topArtists[0].name;
+  const topGenre = USER.genreBreakdown[0].genre;
+
+  document.getElementById('becauseYouLabel').textContent = `BECAUSE YOU LISTEN TO ${topArtist}`;
+  document.getElementById('trendingLabel').textContent = `TRENDING IN ${topGenre.toUpperCase()}`;
+
+  // Because you listen to
+  const because = filtered.filter(t => t.similarTo === topArtist).slice(0, 4);
+  renderRecGrid('becauseYouGrid', because.length ? because : filtered.slice(0, 4));
+
+  // Trending in genre
+  const trending = filtered.filter(t => t.genre === topGenre).slice(0, 4);
+  renderRecGrid('trendingGrid', trending.length ? trending : filtered.slice(2, 6));
+
+  // Hidden gems (lower match %)
+  const gems = [...filtered].sort((a, b) => a.matchPct - b.matchPct).slice(0, 4);
+  renderRecGrid('gemsGrid', gems.length ? gems : filtered.slice(4, 8));
+}
+
+function renderRecGrid(containerId, tracks) {
+  const container = document.getElementById(containerId);
+  if (!tracks.length) {
+    container.innerHTML = '<div style="color:var(--text3); font-size:13px; grid-column:1/-1;">No tracks found for this filter.</div>';
+    return;
+  }
+  container.innerHTML = tracks.map((track, i) => `
+    <div class="rec-card fade-up" style="animation-delay: ${i * 0.06}s">
+      <div class="rec-card-art" style="background: linear-gradient(135deg, ${track.color}22, ${track.color}11);">
+        ${track.emoji}
+        <div class="rec-match-badge">${track.matchPct}% match</div>
+      </div>
+      <div class="rec-card-info">
+        <div class="rec-track-title">${track.title}</div>
+        <div class="rec-track-artist">${track.artist}</div>
+        <div class="rec-tags">
+          ${track.tags.map(tag => `<span class="rec-tag">${tag}</span>`).join('')}
+        </div>
+        <div class="rec-actions-row">
+          <button class="rec-action-btn primary-btn" onclick="playRec(${track.id})">▶ Play</button>
+          <button class="rec-action-btn" onclick="addRecToQueue(${track.id})">+ Queue</button>
+          <button class="rec-action-btn" onclick="likeRec(this)">♡</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function playRec(id) {
+  const track = REC_TRACKS.find(t => t.id === id);
+  if (!track) return;
+  // Convert rec track to queue track format
+  const queueTrack = {
+    ...track,
+    album: 'Recommended',
+    year: 2024,
+    duration: '3:30',
+    durationSec: 210,
+    liked: false,
+    bg: `linear-gradient(135deg, ${track.color}22, #0d0d12)`,
+  };
+  appState.queue = [queueTrack, ...appState.queue];
+  appState.currentTrackIndex = 0;
+  appState.isPlaying = true;
+  saveState();
+  window.location.href = 'index.html';
+}
+
+function addRecToQueue(id) {
+  const track = REC_TRACKS.find(t => t.id === id);
+  if (!track) return;
+  const queueTrack = {
+    ...track,
+    album: 'Recommended',
+    year: 2024,
+    duration: '3:30',
+    durationSec: 210,
+    liked: false,
+    bg: `linear-gradient(135deg, ${track.color}22, #0d0d12)`,
+  };
+  appState.queue.push(queueTrack);
+  saveState();
+  // Flash feedback
+  const btns = document.querySelectorAll('.rec-action-btn');
+  btns.forEach(btn => {
+    if (btn.textContent === '+ Queue') {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Added';
+      btn.style.color = 'var(--accent)';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.color = '';
+      }, 1500);
+    }
+  });
+}
+
+function likeRec(btn) {
+  const isLiked = btn.textContent === '♥';
+  btn.textContent = isLiked ? '♡' : '♥';
+  btn.style.color = isLiked ? '' : 'var(--accent2)';
+  btn.style.borderColor = isLiked ? '' : 'var(--accent2)';
+}
+</script>
+</body>
+</html>
